@@ -87,6 +87,22 @@ RCT_EXPORT_METHOD(getProductsWithTagsForCollection:(NSUInteger)page collectionId
     }];
 }
 
+
+# pragma mark - This 'getProductByHandle:' method exported for getting Product from "handle" String as Parameter
+
+RCT_EXPORT_METHOD(getProductByHandle:(NSString *)handle resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+    [self.client getProductByHandle:handle completion:^(BUYProduct * _Nullable product, NSError * _Nullable error) {
+        if (error) {
+            return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
+        } else {
+            resolve([self getDictionaryForProduct:product]);
+        }
+    }];
+}
+
+
+
 RCT_EXPORT_METHOD(webCheckout:(NSArray *)cart resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
@@ -301,6 +317,34 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
     return result;
 }
 
+#pragma mark - getDictionaryForProduct method created for parsing BUYProduct Object and return Product NSDictionary
+
+- (NSDictionary *) getDictionaryForProduct:(BUYProduct *)product
+{
+    NSMutableDictionary *productDictionary = [[product JSONDictionary] mutableCopy];
+    
+    NSMutableArray *variants = [NSMutableArray array];
+    
+    for (BUYProductVariant *variant in product.variants) {
+        NSMutableDictionary *variantDictionary = [[variant JSONDictionary] mutableCopy];
+        
+        NSMutableArray *options = [NSMutableArray array];
+        
+        for (BUYOptionValue *option in variant.options) {
+            [options addObject: [option JSONDictionary]];
+        }
+        
+        variantDictionary[@"options"] = options;
+        
+        [variants addObject: variantDictionary];
+    }
+    
+    productDictionary[@"variants"] = variants;
+    
+    return productDictionary;
+}
+
+
 - (BUYCheckout *) createCheckoutFromCart:(NSArray *)cartItems
 {
     BUYModelManager *modelManager = self.client.modelManager;
@@ -319,12 +363,6 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
 
 - (NSString *) getJsonFromError:(NSError *)error
 {
-    // If user info can't be parsed to JSON the dataWithJSONObject will throw an exception
-    // In this case, we default to localized description
-    if(![NSJSONSerialization isValidJSONObject:error.userInfo]){
-      return error.localizedDescription;
-    }
-
     NSError * err;
     NSData * jsonData = [NSJSONSerialization dataWithJSONObject:error.userInfo options:0 error:&err];
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];

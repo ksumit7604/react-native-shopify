@@ -1,5 +1,6 @@
 package com.reactnativeshopify;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -187,6 +188,30 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
     });
   }
 
+  /*
+  *This 'getProductByHandle:' method exported for getting Product from "handle" String as Parameter
+  * */
+
+  @ReactMethod
+  public void getProductByHandle(String handle, final Promise promise) {
+      buyClient.getProductByHandle(handle,new Callback<Product>() {
+
+      @Override
+      public void success(Product product) {
+        try {
+          promise.resolve(getProductAsWritableMap(product));
+        } catch (JSONException e) {
+          promise.reject("", e);
+        }
+      }
+
+      @Override
+      public void failure(BuyClientError error) {
+        promise.reject("", error.getRetrofitErrorBody());
+      }
+    });
+  }
+
   @ReactMethod
   public void checkout(ReadableArray cartItems, final Promise promise) {
     Cart cart;
@@ -345,6 +370,17 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
 
     return array;
   }
+
+   /*
+  *This 'getProductAsWritableMap:' method created for parsing BUYProduct Object and return WritableMap
+  * */
+
+  private WritableMap getProductAsWritableMap(Product product) throws JSONException {
+      WritableMap productMap = convertJsonToMap(new JSONObject(product.toJsonString()));
+      productMap.putString("minimum_price", product.getMinimumPrice());
+      return productMap;
+  }
+
 
   private WritableArray getShippingRatesAsWritableArray(List<ShippingRate> shippingRates) throws JSONException {
     WritableArray result = new WritableNativeArray();

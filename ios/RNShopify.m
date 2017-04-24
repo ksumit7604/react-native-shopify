@@ -101,7 +101,19 @@ RCT_EXPORT_METHOD(getProductByHandle:(NSString *)handle resolver:(RCTPromiseReso
     }];
 }
 
+# pragma mark - This 'getCollectionByHandle:' method exported for getting Collection from "handle" String as Parameter
 
+RCT_EXPORT_METHOD(getCollectionByHandle:(NSString *)handle resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+    [self.client getCollectionByHandle:handle completion:^(BUYCollection * _Nullable collection, NSError * _Nullable error) {
+        if (error) {
+            return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
+        } else {
+            NSDictionary* collectionDictionary = [[NSDictionary alloc] initWithDictionary:@{@"title":collection.title, @"id":collection.identifier}];
+            resolve(collectionDictionary);
+        }
+    }];
+}
 
 RCT_EXPORT_METHOD(webCheckout:(NSArray *)cart resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)

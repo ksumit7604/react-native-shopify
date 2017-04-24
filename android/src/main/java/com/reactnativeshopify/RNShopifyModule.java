@@ -212,6 +212,32 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
     });
   }
 
+   /*
+  *This 'getCollectionByHandle:' method exported for getting Collection details from "handle" String as Parameter
+  * */
+
+  @ReactMethod
+  public void getCollectionByHandle(String handle, final Promise promise) {
+
+    buyClient.getCollectionByHandle(handle, new Callback<Collection>() {
+
+      @Override
+      public void success(Collection collection) {
+        try {
+          WritableMap collectionDictionary = convertJsonToMap(new JSONObject(collection.toJsonString()));
+          promise.resolve(collectionDictionary);
+        } catch (JSONException e) {
+          promise.reject("", e);
+        }
+      }
+
+      @Override
+      public void failure(BuyClientError error) {
+
+      }
+    });
+  }
+
   @ReactMethod
   public void checkout(ReadableArray cartItems, final Promise promise) {
     Cart cart;

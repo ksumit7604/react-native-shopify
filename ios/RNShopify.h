@@ -9,6 +9,8 @@
 
 #import "Buy.h"
 
+#define KMerchantID @""
+
 @interface RNShopify : UIViewController <RCTBridgeModule, BUYPaymentProviderDelegate>
 
 @property (nonatomic, strong) BUYClient *client;

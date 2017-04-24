@@ -115,6 +115,19 @@ RCT_EXPORT_METHOD(getCollectionByHandle:(NSString *)handle resolver:(RCTPromiseR
     }];
 }
 
+# pragma mark - Apple Pay Integration
+
+RCT_EXPORT_METHOD(applePayCheckoutWithCart:(NSArray *)cart resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject){
+    _resolve = resolve;
+    _reject = reject;
+    BUYCheckout *checkout = [self createCheckoutFromCart:cart];
+    _checkout = checkout;
+    BUYApplePayPaymentProvider *applePayProvider = [[BUYApplePayPaymentProvider alloc] initWithClient:self.client merchantID:KMerchantID];
+    applePayProvider.delegate = self;
+    [applePayProvider startCheckout: _checkout];
+}
+
 RCT_EXPORT_METHOD(webCheckout:(NSArray *)cart resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {

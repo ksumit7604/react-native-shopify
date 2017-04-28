@@ -385,6 +385,27 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
     });
   }
 
+  @ReactMethod
+  public void webCheckout(final Promise promise) {
+
+    if (checkout != null) {
+      Intent intent = new Intent(Intent.ACTION_VIEW);
+      intent.setData(Uri.parse(checkout.getWebUrl()));
+      intent.setPackage("com.android.chrome");
+      Context context = this.reactContext.getApplicationContext();
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      try {
+        context.startActivity(intent);
+        promise.resolve(true);
+      } catch (ActivityNotFoundException e) {
+        promise.reject("Error", "Please checkout ");
+      }
+    }
+    else {
+      promise.reject("Error", "Please checkout ");
+    }
+  }
+
   private WritableArray getProductsAsWritableArray(List<Product> products) throws JSONException {
     WritableArray array = new WritableNativeArray();
 

@@ -109,8 +109,7 @@ RCT_EXPORT_METHOD(getCollectionByHandle:(NSString *)handle resolver:(RCTPromiseR
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         } else {
-            NSDictionary* collectionDictionary = [[NSDictionary alloc] initWithDictionary:@{@"title":collection.title, @"id":collection.identifier}];
-            resolve(collectionDictionary);
+            resolve([self getDictionaryForCollection:collection]);
         }
     }];
 }
@@ -303,9 +302,16 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
 {
     NSMutableArray *result = [NSMutableArray array];
     for (BUYCollection *collection in collections) {
-        [result addObject: @{@"title":collection.title, @"id":collection.identifier}];
+        [result addObject: @{@"title":collection.title, @"collection_id":collection.identifier, @"handle": collection.handle}];
     }
     return result;
+}
+
+#pragma mark - Get Dictionary for Collection
+
+- (NSDictionary *) getDictionaryForCollection:(BUYCollection *)collection {
+    
+    return [[NSDictionary alloc] initWithDictionary:@{@"title":collection.title, @"collection_id":collection.identifier, @"body_html": collection.htmlDescription, @"handle": collection.handle, @"image": @{@"src": collection.image.sourceURL.absoluteString}}];
 }
 
 /**

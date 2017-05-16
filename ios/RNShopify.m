@@ -298,6 +298,7 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
  *  from the SDK crashes in certain cases. The issue has been reported and closed. It won't be resolved
  *  in the near future. Check this link for details:  https://github.com/Shopify/mobile-buy-sdk-ios/issues/351
  */
+
 - (NSArray *) getDictionariesForCollections:(NSArray<BUYCollection *> *)collections
 {
     NSMutableArray *result = [NSMutableArray array];
@@ -311,7 +312,22 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
 
 - (NSDictionary *) getDictionaryForCollection:(BUYCollection *)collection {
     
-    return [[NSDictionary alloc] initWithDictionary:@{@"title":collection.title, @"collection_id":collection.identifier, @"body_html": collection.htmlDescription, @"handle": collection.handle, @"image": @{@"src": collection.image.sourceURL.absoluteString}}];
+    NSString* stringDescription = [self getStringFromHTMLString:collection.htmlDescription];
+    return [[NSDictionary alloc] initWithDictionary:@{@"title":collection.title, @"collection_id":collection.identifier, @"string_description": stringDescription, @"handle": collection.handle, @"image": @{@"src": collection.image.sourceURL.absoluteString}}];
+}
+
+-(NSString *)getStringFromHTMLString:(NSString *)html {
+    
+    NSScanner *myScanner;
+    NSString *text = nil;
+    myScanner = [NSScanner scannerWithString:html];
+    while ([myScanner isAtEnd] == NO) {
+        [myScanner scanUpToString:@"<" intoString:NULL] ;
+        [myScanner scanUpToString:@">" intoString:&text] ;
+        html = [html stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@"%@>", text] withString:@""];
+    }
+    html = [html stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return html;
 }
 
 /**

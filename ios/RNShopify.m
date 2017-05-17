@@ -27,7 +27,7 @@ RCT_EXPORT_METHOD(getShop:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRe
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
-
+        
         resolve([shop JSONDictionary]);
     }];
 }
@@ -38,7 +38,7 @@ RCT_EXPORT_METHOD(getCollections:(NSUInteger)page resolver:(RCTPromiseResolveBlo
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
-
+        
         resolve([self getDictionariesForCollections:collections]);
     }];
 }
@@ -49,7 +49,7 @@ RCT_EXPORT_METHOD(getProductTags:(NSUInteger)page resolver:(RCTPromiseResolveBlo
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
-
+        
         resolve(tags);
     }];
 }
@@ -60,7 +60,7 @@ RCT_EXPORT_METHOD(getProductsPage:(NSUInteger)page resolver:(RCTPromiseResolveBl
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
-
+        
         resolve([self getDictionariesForProducts:products]);
     }];
 }
@@ -71,7 +71,7 @@ RCT_EXPORT_METHOD(getProductsWithTags:(NSUInteger)page tags:(NSArray<NSString *>
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
-
+        
         resolve([self getDictionariesForProducts:products]);
     }];
 }
@@ -82,7 +82,7 @@ RCT_EXPORT_METHOD(getProductsWithTagsForCollection:(NSUInteger)page collectionId
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
-
+        
         resolve([self getDictionariesForProducts:products]);
     }];
 }
@@ -101,6 +101,22 @@ RCT_EXPORT_METHOD(getProductByHandle:(NSString *)handle resolver:(RCTPromiseReso
     }];
 }
 
+# pragma mark - This 'getProductById:' method exported for getting Product from its Id
+
+RCT_EXPORT_METHOD(getProductById:(NSString *)productId resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject){
+    NSNumberFormatter *format = [[NSNumberFormatter alloc] init];
+    format.numberStyle = kCFNumberFormatterDecimalStyle;
+    NSNumber *productNumber = [format numberFromString:productId];
+    [self.client getProductById:productNumber completion:^(BUYProduct * _Nullable product, NSError * _Nullable error) {
+        if (error) {
+            return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
+        } else {
+            resolve([self getDictionaryForProduct:product]);
+        }
+    }];
+}
+
+
 # pragma mark - This 'getCollectionByHandle:' method exported for getting Collection from "handle" String as Parameter
 
 RCT_EXPORT_METHOD(getCollectionByHandle:(NSString *)handle resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
@@ -113,6 +129,20 @@ RCT_EXPORT_METHOD(getCollectionByHandle:(NSString *)handle resolver:(RCTPromiseR
         }
     }];
 }
+
+# pragma mark - This 'getCollectionById:' method exported for getting Collections from from its Id
+
+RCT_EXPORT_METHOD(getCollectionById:(NSString *)collectionId resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject){
+    NSArray<NSString*>* collectionIds = [[NSArray alloc] initWithObjects:collectionId, nil];
+    [self.client getCollectionsByIds:collectionIds page:1 completion:^(NSArray<BUYCollection *> * _Nullable collections, NSError * _Nullable error) {
+        if (error) {
+            return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
+        } else {
+            resolve([self getDictionaryForCollection:[collections objectAtIndex:0]]);
+        }
+    }];
+}
+
 
 # pragma mark - Apple Pay Integration
 
@@ -132,51 +162,51 @@ RCT_EXPORT_METHOD(webCheckout:(NSArray *)cart resolver:(RCTPromiseResolveBlock)r
 {
     _resolve = resolve;
     _reject = reject;
-
+    
     BUYCheckout *checkout = [self createCheckoutFromCart:cart];
-
+    
     [self.client createCheckout:checkout completion:^(BUYCheckout *checkout, NSError *error) {
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
-
+        
         BUYWebCheckoutPaymentProvider *webPaymentProvider = [[BUYWebCheckoutPaymentProvider alloc] initWithClient:self.client];
         webPaymentProvider.delegate = self;
-
+        
         [webPaymentProvider startCheckout:checkout];
     }];
 }
 
 RCT_EXPORT_METHOD(checkout:(NSArray *)cart resolver:(RCTPromiseResolveBlock)resolve
-                rejecter:(RCTPromiseRejectBlock)reject)
+                  rejecter:(RCTPromiseRejectBlock)reject)
 {
     BUYCheckout *checkout = [self createCheckoutFromCart:cart];
-
+    
     [self.client createCheckout:checkout completion:^(BUYCheckout *checkout, NSError *error) {
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code],
-                [self getJsonFromError:error], error);
+                          [self getJsonFromError:error], error);
         }
-
+        
         self.checkout = checkout;
         resolve(@YES);
     }];
 }
 
 RCT_EXPORT_METHOD(setCustomerInformation:(NSString *)email address:(NSDictionary *)addressDictionary
-                resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+                  resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     BUYAddress *address = [self.client.modelManager insertAddressWithJSONDictionary:addressDictionary];
     self.checkout.shippingAddress = address;
     self.checkout.billingAddress = address;
     self.checkout.email = email;
-
+    
     [self.client updateCheckout:self.checkout completion:^(BUYCheckout *checkout, NSError *error) {
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code],
-                [self getJsonFromError:error], error);
+                          [self getJsonFromError:error], error);
         }
-
+        
         self.checkout = checkout;
         resolve(@YES);
     }];
@@ -188,22 +218,22 @@ RCT_EXPORT_METHOD(getShippingRates:(RCTPromiseResolveBlock)resolve rejecter:(RCT
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
-
+        
         self.availableShippingRates = shippingRates;
-
+        
         NSMutableArray *result = [NSMutableArray array];
-
+        
         for (BUYShippingRate *shippingRate in shippingRates) {
             NSMutableDictionary *shippingRateDictionary = [[shippingRate JSONDictionary] mutableCopy];
-
+            
             if ([shippingRate.deliveryRange count]) {
                 double firstDateInMiliseconds = [shippingRate.deliveryRange[0] timeIntervalSince1970] * 1000;
                 double secondDateInMiliseconds = [[shippingRate.deliveryRange lastObject] timeIntervalSince1970] * 1000;
-
+                
                 NSMutableArray *deliveryRange = [NSMutableArray array];
                 [deliveryRange addObject:[NSNumber numberWithDouble:firstDateInMiliseconds]];
                 [deliveryRange addObject:[NSNumber numberWithDouble:secondDateInMiliseconds]];
-
+                
                 shippingRateDictionary[@"deliveryRange"] = deliveryRange;
             }
             [result addObject: shippingRateDictionary];
@@ -213,22 +243,22 @@ RCT_EXPORT_METHOD(getShippingRates:(RCTPromiseResolveBlock)resolve rejecter:(RCT
 }
 
 RCT_EXPORT_METHOD(selectShippingRate:(NSUInteger)shippingRateIndex resolver:(RCTPromiseResolveBlock)resolve
-                rejecter:(RCTPromiseRejectBlock)reject)
+                  rejecter:(RCTPromiseRejectBlock)reject)
 {
     self.checkout.shippingRate = self.availableShippingRates[shippingRateIndex];
-
+    
     [self.client updateCheckout:self.checkout completion:^(BUYCheckout *checkout, NSError *error) {
         if (error) {
             return reject([NSString stringWithFormat: @"%lu", (long)error.code], error.localizedDescription, error);
         }
-
+        
         self.checkout = checkout;
         resolve(@YES);
     }];
 }
 
 RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTPromiseResolveBlock)resolve
-                rejecter:(RCTPromiseRejectBlock)reject)
+                  rejecter:(RCTPromiseRejectBlock)reject)
 {
     BUYCreditCard *creditCard = [[BUYCreditCard alloc] init];
     creditCard.number = cardDictionary[@"number"];
@@ -236,17 +266,17 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
     creditCard.expiryYear = cardDictionary[@"expiryYear"];
     creditCard.cvv = cardDictionary[@"cvv"];
     creditCard.nameOnCard = [NSString stringWithFormat:@"%@ %@", cardDictionary[@"firstName"], cardDictionary[@"lastName"]];
-
+    
     [self.client storeCreditCard:creditCard checkout:self.checkout completion:^(id<BUYPaymentToken> token, NSError *error) {
         if (error) {
             return reject(@"", [self getJsonFromError:error], error);
         }
-
+        
         [self.client completeCheckoutWithToken:self.checkout.token paymentToken:token completion:^(BUYCheckout *returnedCheckout, NSError *error) {
             if (error) {
                 return reject(@"", [self getJsonFromError:error], error);
             }
-
+            
             self.checkout = returnedCheckout;
             resolve(@YES);
         }];
@@ -338,29 +368,8 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
 {
     NSMutableArray *result = [NSMutableArray array];
     for (BUYProduct *product in products) {
-        NSMutableDictionary *productDictionary = [[product JSONDictionary] mutableCopy];
-
-        NSMutableArray *variants = [NSMutableArray array];
-
-        for (BUYProductVariant *variant in product.variants) {
-            NSMutableDictionary *variantDictionary = [[variant JSONDictionary] mutableCopy];
-
-            NSMutableArray *options = [NSMutableArray array];
-
-            for (BUYOptionValue *option in variant.options) {
-                [options addObject: [option JSONDictionary]];
-            }
-
-            variantDictionary[@"options"] = options;
-
-            [variants addObject: variantDictionary];
-        }
-
-        productDictionary[@"variants"] = variants;
-
-        [result addObject: productDictionary];
+        [result addObject: [self getDictionaryForProduct:product]];
     }
-
     return result;
 }
 
@@ -368,26 +377,20 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
 
 - (NSDictionary *) getDictionaryForProduct:(BUYProduct *)product
 {
+    
     NSMutableDictionary *productDictionary = [[product JSONDictionary] mutableCopy];
-    
     NSMutableArray *variants = [NSMutableArray array];
-    
     for (BUYProductVariant *variant in product.variants) {
         NSMutableDictionary *variantDictionary = [[variant JSONDictionary] mutableCopy];
-        
         NSMutableArray *options = [NSMutableArray array];
-        
         for (BUYOptionValue *option in variant.options) {
             [options addObject: [option JSONDictionary]];
         }
-        
         variantDictionary[@"options"] = options;
-        
         [variants addObject: variantDictionary];
     }
-    
     productDictionary[@"variants"] = variants;
-    
+    productDictionary[@"string_description"] = [self getStringFromHTMLString:product.htmlDescription];
     return productDictionary;
 }
 
@@ -396,14 +399,14 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
 {
     BUYModelManager *modelManager = self.client.modelManager;
     BUYCart *cart = [modelManager insertCartWithJSONDictionary:nil];
-
+    
     for (NSDictionary *cartItem in cartItems) {
         BUYProductVariant *variant = [[BUYProductVariant alloc] initWithModelManager:modelManager JSONDictionary:cartItem[@"variant"]];
         for(int i = 0; i < [cartItem[@"quantity"] integerValue]; i++) {
             [cart addVariant:variant];
         }
     }
-
+    
     BUYCheckout *checkout = [modelManager checkoutWithCart:cart];
     return checkout;
 }

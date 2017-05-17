@@ -220,12 +220,40 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
     }
     
     /*
+     *This 'getProductById:' method exported for getting Product from its Id
+     * */
+    @ReactMethod
+    public void getProductById(String productId, final Promise promise) {
+        try {
+            long productNumber = Long.parseLong(productId);
+            
+            buyClient.getProduct(productNumber, new Callback<Product>() {
+                
+                @Override
+                public void success(Product product) {
+                    try {
+                        promise.resolve(getProductAsWritableMap(product));
+                    } catch (JSONException e) {
+                        promise.reject("", e);
+                    }
+                }
+                
+                @Override
+                public void failure(BuyClientError error) {
+                    promise.reject("", error.getRetrofitErrorBody());
+                }
+            });
+        } catch (NumberFormatException e) {
+            System.out.println("NumberFormatException: " + e.getMessage());
+        }
+        
+    }
+    /*
      *This 'getCollectionByHandle:' method exported for getting Collection details from "handle" String as Parameter
      * */
     
     @ReactMethod
     public void getCollectionByHandle(String handle, final Promise promise) {
-        
         buyClient.getCollectionByHandle(handle, new Callback<Collection>() {
             
             @Override
@@ -247,6 +275,46 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
         });
     }
     
+    /*
+     * This 'getCollectionById:' method exported for getting Collections from from its Id
+     * */
+    @ReactMethod
+    public void getCollectionById(String collectionId, final Promise promise) {
+        
+        ArrayList<Long> collectionIds = new ArrayList<Long>();
+        try {
+            long collectionNumber = Long.parseLong(collectionId);
+            collectionIds.add(collectionNumber);
+            buyClient.getCollections(1, collectionIds, new Callback<List<Collection>>() {
+                
+                @Override
+                public void success(List<Collection> response) {
+                    Collection collection = response.get(0);
+                    try {
+                        String description = getStringFromHTMLString(collection.getHtmlDescription());
+                        WritableMap collectionDictionary = convertJsonToMap(new JSONObject(collection.toJsonString()));
+                        collectionDictionary.putString("string_description", description);
+                        promise.resolve(collectionDictionary);
+                    } catch (JSONException e) {
+                        promise.reject("", e);
+                    }
+                }
+                
+                @Override
+                public void failure(BuyClientError error) {
+                    
+                }
+            });
+            
+        } catch (NumberFormatException e) {
+            System.out.println("NumberFormatException: " + e.getMessage());
+        }
+        
+    }
+    
+    /*
+     * Get string from Html String
+     * */
     public String getStringFromHTMLString(String html) {
         return Html.fromHtml(html).toString();
     }
@@ -420,14 +488,11 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
     }
     
     private WritableArray getProductsAsWritableArray(List<Product> products) throws JSONException {
+        
         WritableArray array = new WritableNativeArray();
-        
         for (Product product : products) {
-            WritableMap productMap = convertJsonToMap(new JSONObject(product.toJsonString()));
-            productMap.putString("minimum_price", product.getMinimumPrice());
-            array.pushMap(productMap);
+            array.pushMap(getProductAsWritableMap(product));
         }
-        
         return array;
     }
     
@@ -438,6 +503,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
     private WritableMap getProductAsWritableMap(Product product) throws JSONException {
         WritableMap productMap = convertJsonToMap(new JSONObject(product.toJsonString()));
         productMap.putString("minimum_price", product.getMinimumPrice());
+        productMap.putString("string_description", getStringFromHTMLString(product.getBodyHtml()));
         return productMap;
     }
     

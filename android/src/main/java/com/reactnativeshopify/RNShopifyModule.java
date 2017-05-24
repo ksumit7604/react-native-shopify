@@ -270,7 +270,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
             
             @Override
             public void failure(BuyClientError error) {
-                
+
             }
         });
     }
@@ -467,8 +467,28 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
     }
     
     @ReactMethod
-    public void webCheckout(final Promise promise) {
-        
+    public void webCheckout(ReadableArray cartItems, final Promise promise) {
+        Cart cart;
+        try {
+            cart = new Cart();
+            for (int i = 0; i < cartItems.size(); i++) {
+                ReadableMap cartItem = cartItems.getMap(i);
+                ReadableMap variantDictionary = cartItem.getMap("variant");
+                int quantity = cartItem.getInt("quantity");
+
+                JSONObject variantAsJsonObject = convertMapToJson(variantDictionary);
+                ProductVariant variant = fromVariantJson(variantAsJsonObject.toString());
+
+                for(int j = 0; j < quantity; j++) {
+                    cart.addVariant(variant);
+                }
+            }
+        } catch (JSONException e) {
+            promise.reject("", e);
+            return;
+        }
+        checkout = new Checkout(cart);
+
         if (checkout != null) {
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(Uri.parse(checkout.getWebUrl()));

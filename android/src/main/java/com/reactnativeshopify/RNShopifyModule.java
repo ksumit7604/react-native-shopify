@@ -43,6 +43,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
     private BuyClient buyClient;
     private Checkout checkout;
     private List<ShippingRate> availableShippingRates;
+    private Promise promise;
     
     public RNShopifyModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -469,6 +470,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void webCheckout(ReadableArray cartItems, final Promise promise) {
         Cart cart;
+        this.promise = promise;
         try {
             cart = new Cart();
             for (int i = 0; i < cartItems.size(); i++) {
@@ -490,17 +492,31 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
         checkout = new Checkout(cart);
 
         if (checkout != null) {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse(checkout.getWebUrl()));
-            intent.setPackage("com.android.chrome");
-            Context context = this.reactContext.getApplicationContext();
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            try {
-                context.startActivity(intent);
-                promise.resolve(true);
-            } catch (ActivityNotFoundException e) {
-                promise.reject("Error", "Please checkout ");
-            }
+
+            buyClient.createCheckout(checkout, new Callback<Checkout>() {
+
+                @Override
+                public void success(Checkout checkout) {
+                    RNShopifyModule.this.checkout = checkout;
+
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setData(Uri.parse(checkout.getWebUrl()));
+                    intent.setPackage("com.android.chrome");
+                    Context context = RNShopifyModule.this.reactContext.getApplicationContext();
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    try {
+                        context.startActivity(intent);
+                        RNShopifyModule.this.promise.resolve(true);
+                    } catch (ActivityNotFoundException e){
+                        RNShopifyModule.this.promise.reject("Error", "Please checkout ");
+                    }
+                }
+
+                @Override
+                public void failure(BuyClientError error) {
+                    RNShopifyModule.this.promise.reject("", error.getRetrofitErrorBody());
+                }
+            });
         }
         else {
             promise.reject("Error", "Please checkout ");

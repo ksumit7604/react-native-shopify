@@ -343,7 +343,8 @@ RCT_EXPORT_METHOD(completeCheckout:(NSDictionary *)cardDictionary resolver:(RCTP
 - (NSDictionary *) getDictionaryForCollection:(BUYCollection *)collection {
     
     NSString* stringDescription = [self getStringFromHTMLString:collection.htmlDescription];
-    return [[NSDictionary alloc] initWithDictionary:@{@"title":collection.title, @"collection_id":collection.identifier, @"string_description": stringDescription, @"handle": collection.handle, @"image": @{@"src": collection.image.sourceURL.absoluteString}}];
+    NSString *imageURL = collection.image == nil ? @"" : collection.image.sourceURL.absoluteString;
+    return [[NSDictionary alloc] initWithDictionary:@{@"title":collection.title, @"collection_id":collection.identifier, @"string_description": stringDescription, @"handle": collection.handle, @"image": @{@"src": imageURL}}];
 }
 
 -(NSString *)getStringFromHTMLString:(NSString *)html {

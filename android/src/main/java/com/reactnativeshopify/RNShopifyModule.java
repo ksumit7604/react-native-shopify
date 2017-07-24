@@ -261,8 +261,20 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
             public void success(Collection collection) {
                 try {
                     String description = getStringFromHTMLString(collection.getHtmlDescription());
-                    WritableMap collectionDictionary = convertJsonToMap(new JSONObject(collection.toJsonString()));
+//                    WritableMap collectionDictionary = convertJsonToMap(new JSONObject(collection.toJsonString()));
+                    WritableMap imageMap = convertJsonToMap(new JSONObject("{}"));
+                    if (collection.getImage() == null){
+                        imageMap.putString("src", "");
+                    }
+                    else {
+                        imageMap.putString("src", collection.getImage().getSrc());
+                    }
+                    WritableMap collectionDictionary = convertJsonToMap(new JSONObject("{}"));
+                    collectionDictionary.putString("title", collection.getTitle());
                     collectionDictionary.putString("string_description", description);
+                    collectionDictionary.putString("collection_id", collection.getCollectionId().toString());
+                    collectionDictionary.putString("handle", collection.getHandle());
+                    collectionDictionary.putMap("image", imageMap);
                     promise.resolve(collectionDictionary);
                 } catch (JSONException e) {
                     promise.reject("", e);
@@ -280,7 +292,7 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
      * This 'getCollectionById:' method exported for getting Collections from from its Id
      * */
     @ReactMethod
-    public void getCollectionById(String collectionId, final Promise promise) {
+    public void getCollectionById(final String collectionId, final Promise promise) {
 
         ArrayList<Long> collectionIds = new ArrayList<Long>();
         try {
@@ -293,8 +305,20 @@ public class RNShopifyModule extends ReactContextBaseJavaModule {
                     Collection collection = response.get(0);
                     try {
                         String description = getStringFromHTMLString(collection.getHtmlDescription());
-                        WritableMap collectionDictionary = convertJsonToMap(new JSONObject(collection.toJsonString()));
+//                        WritableMap collectionDictionary = convertJsonToMap(new JSONObject(collection.toJsonString()));
+                        WritableMap imageMap = convertJsonToMap(new JSONObject("{}"));
+                        if (collection.getImage() == null){
+                            imageMap.putString("src", "");
+                        }
+                        else {
+                            imageMap.putString("src", collection.getImage().getSrc());
+                        }
+                        WritableMap collectionDictionary = convertJsonToMap(new JSONObject("{}"));
+                        collectionDictionary.putString("title", collection.getTitle());
                         collectionDictionary.putString("string_description", description);
+                        collectionDictionary.putString("collection_id", collection.getCollectionId().toString());
+                        collectionDictionary.putString("handle", collection.getHandle());
+                        collectionDictionary.putMap("image", imageMap);
                         promise.resolve(collectionDictionary);
                     } catch (JSONException e) {
                         promise.reject("", e);
